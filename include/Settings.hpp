@@ -26,9 +26,9 @@ private:
     const std::string projectName = std::string(PROJECT_NAME);
     const std::string userHomePath = std::string(getenv("HOME"));
     const std::string settingsFileName = std::string(SETTINGS_FILE_NAME);
+    const std::filesystem::path settingsDirectoryPath = userHomePath + "/." + projectName;
 
     json settingsFile;
-    std::filesystem::path settingsDirectoryPath = userHomePath + "/." + projectName;
 
 public:
 
@@ -106,6 +106,11 @@ public:
         return indentation;
     }
 
-    // TODO: implement Getter methods
-
+    //Getter methods
+    std::string getProjectName() { return projectName; }
+    std::string getUserHomePath() { return userHomePath; }
+    std::string getSettingsFileName() { return settingsFileName; }
+    std::string getSettingsDirectoryPath() { return settingsDirectoryPath; }
+    
+    json getSettingsFile() { return settingsFile; }
 };
