@@ -8,7 +8,7 @@
 
 - **[nlohmann/json](https://github.com/nlohmann/json)**: C++ JSON library for parsing JSON data.
 - **[spdlog](https://github.com/gabime/spdlog)**: C++ logging library.
-
+- **[boost/program_options](https://github.com/boostorg/program_options/tree/develop)**: C++ parameter handler.
 ---
 
 ### Installing Dependencies
@@ -17,7 +17,7 @@
    On Debian-based systems:
 
    ```bash
-   sudo apt-get install nlohmann-json3-dev libspdlog-dev
+   sudo apt-get install nlohmann-json3-dev libspdlog-dev libboost-all-dev
    ```
 
 ---
