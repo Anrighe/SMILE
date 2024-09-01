@@ -1,12 +1,30 @@
 # Simple Mistake Identifier Lookup Engine
 
- This is a simple software used to identify spelling mistakes of binaries typed in the bash shell, and correct them by suggesting a similar binary currently installed in the operative system.
+ This is a simple C++ software used to identify spelling mistakes of binaries typed in the bash shell, and correct them by suggesting a similar binary currently installed in the operative system.
+
+---
+
+### External Dependencies
+
+- **[nlohmann/json](https://github.com/nlohmann/json)**: C++ JSON library for parsing JSON data.
+- **[spdlog](https://github.com/gabime/spdlog)**: C++ logging library.
+
+---
+
+### Installing Dependencies
+
+
+   On Debian-based systems:
+
+   ```bash
+   sudo apt-get install nlohmann-json3-dev libspdlog-dev
+   ```
 
 ---
 
 ### Steps of the algorithm:
 1) An incorrect command (do I also want to consider built-ins? Still need to decide) is executed on the shell.
-2) The binary couldn't be found in the ***$PATH*** variable, anche the ***command_not_found_handle()*** function is executed.
+2) The binary couldn't be found in the ***$PATH*** variable, consequently the ***command_not_found_handle()*** function is executed.
 3) A new version of this function runs the *SMILE* program.
 4) *SMILE* searches which binaries is currently installed in the system.
 5) For each binary the [Jaccard similarity coefficient](https://en.wikipedia.org/wiki/Jaccard_index) is calculated based on the [q-gram](https://en.wikipedia.org/wiki/N-gram) string subdivision method.
