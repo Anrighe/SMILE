@@ -27,6 +27,6 @@
 2) The binary couldn't be found in the ***$PATH*** variable, consequently the ***command_not_found_handle()*** function is executed.
 3) A new version of this function runs the *SMILE* program.
 4) *SMILE* searches which binaries is currently installed in the system.
-5) For each binary the [Jaccard similarity coefficient](https://en.wikipedia.org/wiki/Jaccard_index) is calculated based on the [q-gram](https://en.wikipedia.org/wiki/N-gram) string subdivision method.
+5) For each binary in the system, the [Jaccard similarity coefficient](https://en.wikipedia.org/wiki/Jaccard_index).
 6) For all results of the Jaccard similarity coefficient computation, if they are greater than a specific threshold, the [Damerau–Levenshtein](https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance) distance will be calculated between the user inserted command and the current binary.
 7) For all results of the Damerau–Levenshtein computation, if the edit distance is less than a specific threshold, they will be suggested to the user.

@@ -13,7 +13,7 @@ using json = nlohmann::json;
 
 #define CONFIG_INDENTATION_SIZE 4
 
-#define QGRAM_STD_SIZE 2
+#define DEFAULT_DATABASE_HISTORY_STORAGE false
 
 /**
  * @class Settings
@@ -30,6 +30,8 @@ private:
 
     json settingsFile;
 
+    bool databaseHistoryStorage;
+
 public:
 
     Settings() {     
@@ -44,10 +46,35 @@ public:
             spdlog::info("Directory " + settingsDirectoryPath.string() + " successfully generated");
             spdlog::info("Generating settings.json file...");
 
-            settingsFile["qGramSize"] = QGRAM_STD_SIZE;
+            settingsFile["databaseHistoryStorage"] = DEFAULT_DATABASE_HISTORY_STORAGE;
             std::ofstream file(settingsDirectoryPath.string() + "/" + settingsFileName);
             file<<settingsFile;
+
+            file.close();
+        } else {
+            spdlog::info("Loding configuration...");
+
+            std::ifstream file(settingsDirectoryPath.string() + "/" + settingsFileName);
+            if (!file.is_open()) {
+                spdlog::error("Error while opening settings file: " +  settingsDirectoryPath.string() + "/" + settingsFileName);
+                exit(1);
+            }
+
+            file>>settingsFile;
+
+            databaseHistoryStorage = settingsFile["databaseHistoryStorage"].get<bool>();
+
+            if (databaseHistoryStorage) {
+                // TODO:
+                // Check database existance
+                //  If not present, generate it
+
+                // Finally (in either case), establish a connection 
+            }
+
+            file.close();
         }
+        spdlog::info("Settings file successfully loaded");
         
     }
 

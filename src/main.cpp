@@ -26,7 +26,8 @@ int main(int argc, char* argv[]) {
         if (vm.count("ic")) {
             spdlog::info("Specified input command: " + vm["ic"].as<std::string>());
         } else {
-            spdlog::error("Input command was not specified.");
+            spdlog::error("Input command was not specified. Exiting...");
+            exit(1);
         }
 
     }
