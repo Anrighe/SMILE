@@ -5,6 +5,8 @@
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <stdlib.h>
+#include <SQLiteCpp/SQLiteCpp.h>
+#include "CommonUtils.hpp"
 
 using json = nlohmann::json;
 
@@ -65,11 +67,18 @@ public:
             databaseHistoryStorage = settingsFile["databaseHistoryStorage"].get<bool>();
 
             if (databaseHistoryStorage) {
-                // TODO:
-                // Check database existance
-                //  If not present, generate it
+                std::string databaseFilePath = settingsDirectoryPath.string() + "/" + "historyStorage.db";
 
-                // Finally (in either case), establish a connection 
+                try {
+
+                    // If there is no sqlite database file in the settings folder, generate it.
+                    // Either way, establishes a connection
+                    SQLite::Database db("testdb/historyStorage.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+                }
+                catch (const std::exception& e) {
+                    spdlog::error("Error creating database: ", e.what());
+                }
+                
             }
 
             file.close();
@@ -78,60 +87,8 @@ public:
         
     }
 
-    /**
-     * @brief Checks if a string field exists and is not empty in a JSON object.
-     *
-     * Verifies whether a specified field exists in the given JSON object and that it is a non-empty string.
-     * If the field is valid, the value is assigned to the provided reference variable.
-     *
-     * @param data The JSON object to check.
-     * @param field The name of the field to check.
-     * @param valueToAssign Reference to the variable where the field's value will be assigned.
-     * @return True if the field exists and is a non-empty string; false otherwise.
-     */
-    bool doesStringExistAndIsNotEmptyInJson(json data, std::string field, std::string &valueToAssign) {
-        if (data.contains(field) && data[field].is_string() && data[field] != "") {
-            valueToAssign = data[field];
-            return true;
-        } else {
-            spdlog::error(field + " is not present in the settings file or has not been set");
-            return false;
-        }
-    }
 
-    /**
-     * @brief Validates whether the provided string represents a valid non-negative integer.
-     *
-     * @param indentationSize the string representing to be validated
-     * @return ```true``` if the string can be successfully converted to a non-negative integer, ```false``` otherwise
-     * @throws ```std::exception``` if the string cannot be converted to an integer (either due to an invalid format or value out of range)
-     */
-    bool isStringAnIntegerGreaterOrEqualThanZero(const std::string indentationSize) {
-        try {
-            int indentSize = std::stoi(indentationSize);
-            if (indentSize >= 0)
-                return true;
-        } catch (const std::exception &e) {
-            spdlog::error("Could not validate the settings parameter 'indentationSize'");
-            std::cerr<<e.what()<<"\n";
-            return false;
-        }
-        return false;
-    }
 
-    /**
-     * @brief Converts the settings object indentation size into a string of whitespace characters.
-     *
-     * @return a string of whitespace characters with a length corresponding to the integer value of ```indentationSize```
-     * @throws ```std::invalid_argument``` if the ```indentationSize``` cannot be converted to an integer
-     * @throws ```std::out_of_range``` if the ```indentationSize``` value is out of range for an integer
-     */
-    std::string getIndentationSizeInWhitespaces() {
-        std::string indentation = "";
-        for (std::size_t i = 0; i < CONFIG_INDENTATION_SIZE; ++i)
-            indentation += " ";
-        return indentation;
-    }
 
     //Getter methods
     std::string getProjectName() { return projectName; }

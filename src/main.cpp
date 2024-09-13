@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
         po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "Produce a help message")
-            ("ic", po::value<std::string>(), "The input command");
+            ("i", po::value<std::string>(), "The input command");
 
         po::variables_map vm;        
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -23,8 +23,8 @@ int main(int argc, char* argv[]) {
             return 0;
         }
 
-        if (vm.count("ic")) {
-            spdlog::info("Specified input command: " + vm["ic"].as<std::string>());
+        if (vm.count("i")) {
+            spdlog::info("Specified input command: " + vm["i"].as<std::string>());
         } else {
             spdlog::error("Input command was not specified. Exiting...");
             exit(1);
@@ -32,11 +32,11 @@ int main(int argc, char* argv[]) {
 
     }
     catch(std::exception& e) {
-        std::cerr << "error: " << e.what() << "\n";
+        std::cerr<<"error: "<<e.what()<<"\n";
         return 1;
     }
     catch(...) {
-        std::cerr << "Exception of unknown type!\n";
+        std::cerr<<"Exception of unknown type\n";
     }
 
     Settings settings;

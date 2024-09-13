@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -pedantic-errors -std=c++23 -I/usr/include
-LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lfmt -lboost_system -lboost_filesystem -lboost_program_options
+LDFLAGS = -L/usr/lib/x86_64-linux-gnu -lfmt -lboost_system -lboost_filesystem -lboost_program_options -lSQLiteCpp -lsqlite3
 
 OBJS = src/main.o
 
