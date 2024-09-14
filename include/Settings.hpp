@@ -15,7 +15,7 @@ using json = nlohmann::json;
 
 #define CONFIG_INDENTATION_SIZE 4
 
-#define DEFAULT_DATABASE_HISTORY_STORAGE false
+#define DEFAULT_DATABASE_HISTORY_STORAGE true
 
 /**
  * @class Settings
@@ -33,6 +33,7 @@ private:
     json settingsFile;
 
     bool databaseHistoryStorage;
+    SQLite::Database * db;
 
 public:
 
@@ -64,8 +65,10 @@ public:
 
             file>>settingsFile;
 
+            file.close();
+        }
             databaseHistoryStorage = settingsFile["databaseHistoryStorage"].get<bool>();
-
+            spdlog::info("Database history storage enabled: {}", databaseHistoryStorage);
             if (databaseHistoryStorage) {
                 std::string databaseFilePath = settingsDirectoryPath.string() + "/" + "historyStorage.db";
 
@@ -73,16 +76,19 @@ public:
 
                     // If there is no sqlite database file in the settings folder, generate it.
                     // Either way, establishes a connection
-                    SQLite::Database db("testdb/historyStorage.db", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+                    db = new SQLite::Database(databaseFilePath, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+                    spdlog::info("Established connection to history database file in: {}", databaseFilePath);
+
+                    db->exec("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, event TEXT)");
                 }
                 catch (const std::exception& e) {
-                    spdlog::error("Error creating database: ", e.what());
+                    spdlog::error("Error creating database: {}", e.what());
                 }
                 
             }
 
-            file.close();
-        }
+
         spdlog::info("Settings file successfully loaded");
         
     }
