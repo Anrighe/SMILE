@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <SQLiteCpp/SQLiteCpp.h>
 #include "CommonUtils.hpp"
+#include "DatabaseStatements.hpp"
 
 using json = nlohmann::json;
 
@@ -16,6 +17,8 @@ using json = nlohmann::json;
 #define CONFIG_INDENTATION_SIZE 4
 
 #define DEFAULT_DATABASE_HISTORY_STORAGE true
+
+#define DEBUG true
 
 /**
  * @class Settings
@@ -70,20 +73,49 @@ public:
             databaseHistoryStorage = settingsFile["databaseHistoryStorage"].get<bool>();
             spdlog::info("Database history storage enabled: {}", databaseHistoryStorage);
             if (databaseHistoryStorage) {
-                std::string databaseFilePath = settingsDirectoryPath.string() + "/" + "historyStorage.db";
+
+                #if DEBUG == true
+                    std::string databaseFilePath = "historyStorage.db";
+                #else
+                    std::string databaseFilePath = settingsDirectoryPath.string() + "/" + "historyStorage.db";
+                #endif
 
                 try {
 
-                    // If there is no sqlite database file in the settings folder, generate it.
+                    // If there is no sqlite database file in the settings folder, generates it.
                     // Either way, establishes a connection
                     db = new SQLite::Database(databaseFilePath, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
 
                     spdlog::info("Established connection to history database file in: {}", databaseFilePath);
 
+                    // Connects the Database Statement module to the connected database
+                    DatabaseStatements databaseStatements(*db);
+
+                    spdlog::info("Instantiated database statements module");
+
+
+                    spdlog::info("CREATING QUERY");
+                    SQLite::Statement query = databaseStatements.createHistoryTable();
+
+                    spdlog::info("EXECUTING QUERY");
+                    while (query.executeStep()) {
+                        std::cout<<query.getColumn(0)<<"\n";
+                    }
+
+
+
+                    /*db->exec("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, event TEXT)");
+
+                    spdlog::info("Rows affecte by the SELECT * FROM history statement: {}",db->exec("SELECT * FROM history"));
+
+                    db->exec("INSERT INTO TABLE history(1, 'WOW')");
+
                     db->exec("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, event TEXT)");
+
+                    spdlog::info("Rows affecte by the SELECT * FROM history statement: {}",db->exec("SELECT * FROM history"));*/
                 }
                 catch (const std::exception& e) {
-                    spdlog::error("Error creating database: {}", e.what());
+                    spdlog::error("Error handling database: {}", e.what());
                 }
                 
             }
