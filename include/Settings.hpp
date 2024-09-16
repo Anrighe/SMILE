@@ -95,24 +95,29 @@ public:
 
 
                     spdlog::info("CREATING QUERY");
-                    SQLite::Statement query = databaseStatements.createHistoryTable();
+                    SQLite::Statement query = databaseStatements.getCreateHistoryTablePreparedQuery();
 
                     spdlog::info("EXECUTING QUERY");
                     while (query.executeStep()) {
                         std::cout<<query.getColumn(0)<<"\n";
                     }
 
+                    query = databaseStatements.getInsertCommandPreparedQuery("testcommand");
 
+                    query.executeStep();
 
-                    /*db->exec("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, event TEXT)");
+                    query = databaseStatements.getUpdateNewCommandUsePreparedQuery("test", "test");
 
-                    spdlog::info("Rows affecte by the SELECT * FROM history statement: {}",db->exec("SELECT * FROM history"));
+                    query.executeStep();
 
-                    db->exec("INSERT INTO TABLE history(1, 'WOW')");
+                    query = databaseStatements.getInsertCommandPreparedQuery("testcommand2");
 
-                    db->exec("CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY, event TEXT)");
+                    query.executeStep();
 
-                    spdlog::info("Rows affecte by the SELECT * FROM history statement: {}",db->exec("SELECT * FROM history"));*/
+                    query = databaseStatements.getDeleteCommandPreparedQuery("testcommand2");
+
+                    query.executeStep();
+
                 }
                 catch (const std::exception& e) {
                     spdlog::error("Error handling database: {}", e.what());

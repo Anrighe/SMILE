@@ -52,23 +52,41 @@ public:
         /* ---------- SELECT ----------*/
         getAllQuery = "SELECT * FROM history";
 
-        getCommandQuery = "SELECT * FROM history WHERE command = '?'";
+        getCommandQuery = "SELECT * FROM history WHERE command = ?";
 
         /* ---------- INSERT ----------*/
-        insertCommandQuery = "INSERT INTO history VALUES(?, 0, current_timestamp)";
+        insertCommandQuery = "INSERT OR IGNORE INTO history VALUES(?, 0, current_timestamp)";
 
         /* ---------- UPDATE ----------*/
-        updateNewCommandUseQuery = "UPDATE history SET (execution_counter = (SELECT execution_counter FROM history WHERE command = ?), last_execution = current_timestamp) \
+        updateNewCommandUseQuery = "UPDATE history SET execution_counter = (SELECT execution_counter FROM history WHERE command = ?) + 1,    \
+                                    last_execution = current_timestamp                                                                         \
                                     WHERE command = ?";
 
         /* ---------- DELETE ----------*/
         deleteCommandQuery = "DELETE FROM history WHERE command = ?";
     }
 
-    SQLite::Statement createHistoryTable() { return prepareStatement(createHistoryTableQuery); }
-    SQLite::Statement getAll() { return prepareStatement(getAllQuery); }
-    SQLite::Statement getCommand() { return prepareStatement(getCommandQuery); }
-    SQLite::Statement getInsertCommandQuery() { return prepareStatement(insertCommandQuery); }
-    SQLite::Statement getuUpdateNewCommandUseQuery() { return prepareStatement(updateNewCommandUseQuery); }
-    SQLite::Statement getuDeleteCommandQuery() { return prepareStatement(deleteCommandQuery); }
+    SQLite::Statement getCreateHistoryTablePreparedQuery() { return prepareStatement(createHistoryTableQuery); }
+    
+    SQLite::Statement getAllPreparedQuery() { return prepareStatement(getAllQuery); }
+
+    template<typename T>
+    SQLite::Statement getCommandPreparedQuery(T&& parameter) { 
+        return prepareStatement(getCommandQuery(std::forward<T>(parameter))); 
+    }
+
+    template<typename T> 
+    SQLite::Statement getInsertCommandPreparedQuery(T&& parameter) { 
+        return prepareStatement(insertCommandQuery, std::forward<T>(parameter)); 
+    }
+
+    template<typename T1, typename T2> 
+    SQLite::Statement getUpdateNewCommandUsePreparedQuery(T1&& parameter1, T2&& parameter2) { 
+        return prepareStatement(updateNewCommandUseQuery, std::forward<T1>(parameter1), std::forward<T2>(parameter2)); 
+    }
+
+    template<typename T>
+    SQLite::Statement getDeleteCommandPreparedQuery(T&& parameter) { 
+        return prepareStatement(deleteCommandQuery, std::forward<T>(parameter)); 
+    }
 };
