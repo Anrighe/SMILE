@@ -9,7 +9,7 @@ private:
     SQLite::Database * db;
 
     /* ---------- CREATE ----------*/
-    std::string createHistoryTableQuery;
+    std::string createHistoryTableIfNotExistsQuery;
 
     /* ---------- SELECT ----------*/
     std::string getAllQuery;
@@ -44,10 +44,10 @@ public:
         db = &database; 
 
         /* ---------- CREATE ----------*/
-        createHistoryTableQuery = "CREATE TABLE IF NOT EXISTS history (                     \
-                                    command VARCHAR(256) PRIMARY KEY,                       \
-                                    execution_counter INTEGER DEFAULT 0 NOT NULL,           \
-                                    last_execution TEXT DEFAULT 'N/A')";
+        createHistoryTableIfNotExistsQuery = "CREATE TABLE IF NOT EXISTS history (                      \
+                                                command VARCHAR(256) PRIMARY KEY,                       \
+                                                execution_counter INTEGER DEFAULT 0 NOT NULL,           \
+                                                last_execution TEXT DEFAULT 'N/A')";
 
         /* ---------- SELECT ----------*/
         getAllQuery = "SELECT * FROM history";
@@ -66,7 +66,7 @@ public:
         deleteCommandQuery = "DELETE FROM history WHERE command = ?";
     }
 
-    SQLite::Statement getCreateHistoryTablePreparedQuery() { return prepareStatement(createHistoryTableQuery); }
+    SQLite::Statement getCreateHistoryTableIfNotExistsPreparedQuery() { return prepareStatement(createHistoryTableIfNotExistsQuery); }
     
     SQLite::Statement getAllPreparedQuery() { return prepareStatement(getAllQuery); }
 

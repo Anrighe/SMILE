@@ -8,7 +8,8 @@ namespace po = boost::program_options;
 int main(int argc, char* argv[]) {
 
     try {
-
+        
+        // Handling program parameters
         po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "Produce a help message")
@@ -24,7 +25,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (vm.count("i")) {
-            spdlog::info("Specified input command: " + vm["i"].as<std::string>());
+            spdlog::info("Specified input command: {}", vm["i"].as<std::string>());
         } else {
             spdlog::error("Input command was not specified. Exiting...");
             exit(1);
@@ -37,9 +38,12 @@ int main(int argc, char* argv[]) {
     }
     catch(...) {
         std::cerr<<"Exception of unknown type\n";
+        return 1;
     }
 
     Settings settings;
+
+
     
     return 0;
 }
