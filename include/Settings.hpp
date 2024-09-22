@@ -28,14 +28,15 @@ class Settings {
 private:
 
     const std::string projectName = std::string(PROJECT_NAME);
-    const std::string userHomePath = std::string(getenv("HOME"));
     const std::string settingsFileName = std::string(SETTINGS_FILE_NAME);
-    const std::filesystem::path settingsDirectoryPath = userHomePath + "/." + projectName;
+    const std::filesystem::path userHomePath = std::string(getenv("HOME"));
+    const std::filesystem::path settingsDirectoryPath = userHomePath.string() + "/." + projectName;
     const std::filesystem::path settingsFilePath = settingsDirectoryPath.string() + "/" + settingsFileName;
+    const std::filesystem::path databaseFilePath = settingsDirectoryPath.string() + "/" + DATABASE_FILENAME;
 
     json settingsFile;
 
-    bool databaseHistoryStorage;
+    bool databaseHistoryStorageEnabled;
     SQLite::Database * db;
 
     void generateSettingsDirectory() {
@@ -58,7 +59,7 @@ private:
         std::string enabledDatabaseMessage;
         enabledDatabaseMessage = DEFAULT_DATABASE_HISTORY_STORAGE ? "Enabling" : "Disabling";     
         spdlog::info(enabledDatabaseMessage.append(" database by default in the settings file..."));
-        settingsFile["databaseHistoryStorage"] = DEFAULT_DATABASE_HISTORY_STORAGE;
+        settingsFile["databaseHistoryStorageEnabled"] = DEFAULT_DATABASE_HISTORY_STORAGE;
 
         // Storing each path in the system $PATH variable in the systemPathVariableListed vector
         spdlog::info("Loading by default all path contained in the system Path variable as a lookup reference in the settings file...");
@@ -83,6 +84,37 @@ private:
             generateSettingsFile();
     }
 
+    void generateDatabaseIfNotExists(bool databaseHistoryStorageEnabled) {
+        if (databaseHistoryStorageEnabled) {
+            spdlog::info("Database history storage enabled");
+            try {
+                // If there is no sqlite database file in the settings directory, generates it.
+                // Either way, establishes a connection
+                db = new SQLite::Database(databaseFilePath, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
+
+                spdlog::info("Established connection to history database file in: {}", databaseFilePath.string());
+
+                // Connects the Database Statement module to the connected database
+                DatabaseStatements databaseStatements(*db);
+
+                spdlog::info("Instantiated database statements module");
+
+                // Instantiates history table if not exists
+                SQLite::Statement query = databaseStatements.getCreateHistoryTableIfNotExistsPreparedQuery();
+                query.exec();
+
+                spdlog::info("Database history table existance established");
+            }
+            catch (const SQLite::Exception& e) {
+                spdlog::error("Error during query execution {}", e.what());
+            }
+            catch (const std::exception& e) {
+                spdlog::error("Error handling database: {}", e.what());
+            }
+        } else 
+            spdlog::info("Database history storage disabled");
+    }
+
 public:
 
     Settings() {     
@@ -100,58 +132,28 @@ public:
         }
 
         file>>settingsFile;
-
         file.close();
 
-        databaseHistoryStorage = settingsFile["databaseHistoryStorage"].get<bool>();
-        spdlog::info("Database history storage enabled: {}", databaseHistoryStorage);
-        if (databaseHistoryStorage) {
-
-            #if DEBUG == true
-                std::string databaseFilePath = "historyStorage.db";
-            #else
-                std::string databaseFilePath = settingsDirectoryPath.string() + "/" + DATABASE_FILENAME;
-            #endif
-
-            try {
-
-                // If there is no sqlite database file in the settings directory, generates it.
-                // Either way, establishes a connection
-                db = new SQLite::Database(databaseFilePath, SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-
-                spdlog::info("Established connection to history database file in: {}", databaseFilePath);
-
-                // Connects the Database Statement module to the connected database
-                DatabaseStatements databaseStatements(*db);
-
-                spdlog::info("Instantiated database statements module");
-
-                // Instantiates history table if not exists
-                SQLite::Statement query = databaseStatements.getCreateHistoryTableIfNotExistsPreparedQuery();
-                query.exec();
-
-                spdlog::info("Database history table existance established");
-
-            }
-            catch (const SQLite::Exception& e) {
-                spdlog::error("Error during query execution {}", e.what());
-            }
-            catch (const std::exception& e) {
-                spdlog::error("Error handling database: {}", e.what());
-            }
-            
-        }
-
-        spdlog::info("Settings file successfully loaded");
+        databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
+        generateDatabaseIfNotExists(databaseHistoryStorageEnabled);
         
+        spdlog::info("Settings file successfully loaded");
     }
 
-
-    //Getter methods
+    // Getter methods
     std::string getProjectName() { return projectName; }
-    std::string getUserHomePath() { return userHomePath; }
     std::string getSettingsFileName() { return settingsFileName; }
-    std::string getSettingsDirectoryPath() { return settingsDirectoryPath; }
+
+    std::string getUserHomePathStringString() { return userHomePath.string(); }
+    std::string getSettingsDirectoryPathString() { return settingsDirectoryPath.string(); }
+    std::string getSettingsFilePathString() { return settingsFilePath.string(); }
+    std::string getDatabaseFilePathString() { return databaseFilePath.string(); }
+
+    std::filesystem::path getUserHomePath() { return userHomePath; }
+    std::filesystem::path getSettingsDirectoryPath() { return settingsDirectoryPath; }
+    std::filesystem::path getSettingsFilePath() { return settingsFilePath; }
+    std::filesystem::path getDatabaseFilePath() { return databaseFilePath; }
     
     json getSettingsFile() { return settingsFile; }
+    std::vector<std::string> getSystemPathVariablePaths() { return settingsFile["systemBinariesPath"].get<std::vector<std::string>>(); }
 };
