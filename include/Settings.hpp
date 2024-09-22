@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 #include <stdlib.h>
 #include <SQLiteCpp/SQLiteCpp.h>
+#include <unistd.h>
 #include "CommonUtils.hpp"
 #include "DatabaseStatements.hpp"
 
@@ -37,6 +38,7 @@ private:
     json settingsFile;
 
     bool databaseHistoryStorageEnabled;
+    std::vector<std::string> systemPathVariableList;
     SQLite::Database * db;
 
     void generateSettingsDirectory() {
@@ -84,6 +86,26 @@ private:
             generateSettingsFile();
     }
 
+    void loadSettingsFile() {
+        spdlog::info("Loding settings file configuration...");
+
+        std::ifstream file(settingsFilePath);
+        if (!file.is_open()) {
+            spdlog::error("Error while opening settings file: " +  settingsDirectoryPath.string() + "/" + settingsFileName);
+            exit(1);
+        }
+
+        file>>settingsFile;
+        file.close();
+
+        systemPathVariableList = settingsFile["systemBinariesPath"].get<std::vector<std::string>>();
+
+        databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
+        generateDatabaseIfNotExists(databaseHistoryStorageEnabled);
+        
+        spdlog::info("Settings file successfully loaded");
+    }
+
     void generateDatabaseIfNotExists(bool databaseHistoryStorageEnabled) {
         if (databaseHistoryStorageEnabled) {
             spdlog::info("Database history storage enabled");
@@ -123,21 +145,7 @@ public:
 
         generateSettingsFileIfNotExists();
 
-        spdlog::info("Loding configuration...");
-
-        std::ifstream file(settingsFilePath);
-        if (!file.is_open()) {
-            spdlog::error("Error while opening settings file: " +  settingsDirectoryPath.string() + "/" + settingsFileName);
-            exit(1);
-        }
-
-        file>>settingsFile;
-        file.close();
-
-        databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
-        generateDatabaseIfNotExists(databaseHistoryStorageEnabled);
-        
-        spdlog::info("Settings file successfully loaded");
+        loadSettingsFile();
     }
 
     // Getter methods
@@ -155,5 +163,5 @@ public:
     std::filesystem::path getDatabaseFilePath() { return databaseFilePath; }
     
     json getSettingsFile() { return settingsFile; }
-    std::vector<std::string> getSystemPathVariablePaths() { return settingsFile["systemBinariesPath"].get<std::vector<std::string>>(); }
+    std::vector<std::string> getSystemPathVariablePaths() { return systemPathVariableList; }
 };

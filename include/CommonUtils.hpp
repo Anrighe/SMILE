@@ -66,7 +66,31 @@ public:
         return indentation;
     }
 
+    static bool doesCurrentUserHaveExecutablePermissionForFile(const std::filesystem::path& filePath) {
+        return std::filesystem::is_regular_file(filePath) && (access(filePath.c_str(), X_OK) == 0);
+    }
 
+    static std::vector<std::string> getListOfFilesInPath(std::string path, bool recursive, bool executablePermission) {
+        std::vector<std::string> fileList;
 
+        for (const auto &entry : std::filesystem::directory_iterator(path)) {
+            if (recursive && entry.is_directory()) {
+                std::vector<std::string> tmpVector = getListOfFilesInPath(entry.path().string(), recursive, executablePermission);
+                try {
+                    fileList.insert(fileList.end(), tmpVector.begin(), tmpVector.end());
+                } catch (std::filesystem::__cxx11::filesystem_error &e) {
+                    spdlog::warn("Error while opening {}: {}. Ignoring...", entry.path().string(), e.what());
+                }
+            } else {
+                try {
+                    if (executablePermission && doesCurrentUserHaveExecutablePermissionForFile(entry.path()))
+                        fileList.push_back(entry.path().filename().string());
+                } catch (std::filesystem::__cxx11::filesystem_error &e) {
+                    spdlog::warn("Error while opening {}: {}. Ignoring...", entry.path().string(), e.what());
+                }
+            }
+        }
 
+        return fileList;
+    }
 };

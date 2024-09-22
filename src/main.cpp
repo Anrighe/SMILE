@@ -43,7 +43,21 @@ int main(int argc, char* argv[]) {
 
     Settings settings;
 
+    for (const auto &entry : settings.getSystemPathVariablePaths()) {
+        std::cout<<"entry: "<<entry<<"\n";
+        std::vector<std::string> systemPathVariableList = CommonUtils::getListOfFilesInPath(entry, false, true);
+        
+        for (const auto &entry : systemPathVariableList) {
+            std::cout<<entry<<"\n";
+        }
+    }
     
-    
+    // Testing
+    /*
+    for (const auto &entry : CommonUtils::getListOfFilesInPath(std::string("/usr/bin"))) {
+        std::cout<<entry<<"\n";
+    }
+    */
+
     return 0;
 }
