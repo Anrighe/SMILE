@@ -42,14 +42,24 @@ int main(int argc, char* argv[]) {
     }
 
     Settings settings;
+    spdlog::info("Settings successufully loaded.");
+
+
+    // Writing command_not_found_handle funtion in .bashrc file if not present
+    int result = system("bash initializer/initialzer.sh");
+    if (result != 0)
+        spdlog::error("Error executing the initializer script. Return code: {}", result);
+    else
+        spdlog::info("Initializer script successfully executed.");
+
 
     for (const auto &entry : settings.getSystemPathVariablePaths()) {
         std::cout<<"entry: "<<entry<<"\n";
         std::vector<std::string> systemPathVariableList = CommonUtils::getListOfFilesInPath(entry, false, true);
         
-        for (const auto &entry : systemPathVariableList) {
+        /*for (const auto &entry : systemPathVariableList) {
             std::cout<<entry<<"\n";
-        }
+        }*/
     }
     
     // Testing

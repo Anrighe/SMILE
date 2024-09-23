@@ -17,6 +17,7 @@ using json = nlohmann::json;
 #define CONFIG_INDENTATION_SIZE 4
 #define DATABASE_FILENAME "historyStorage.db"
 #define DEFAULT_DATABASE_HISTORY_STORAGE true
+#define DEFAULT_IGNORE_MNT_FROM_SYSTEM_PATH_VARIABLES true
 
 #define DEBUG false
 
@@ -38,6 +39,7 @@ private:
     json settingsFile;
 
     bool databaseHistoryStorageEnabled;
+    bool ignoreMntFromSystemPathVariables;
     std::vector<std::string> systemPathVariableList;
     SQLite::Database * db;
 
@@ -74,9 +76,11 @@ private:
             systemPathVariableListed.push_back(tmpVariable);
         
         settingsFile["systemBinariesPath"] = systemPathVariableListed;
+        
+        settingsFile["ignoreMntFromSystemPathVariables"] = DEFAULT_IGNORE_MNT_FROM_SYSTEM_PATH_VARIABLES;
+
         std::ofstream file(settingsFilePath);
         file<<settingsFile;
-
         file.close();
     }
 
@@ -98,6 +102,7 @@ private:
         file>>settingsFile;
         file.close();
 
+        ignoreMntFromSystemPathVariables = settingsFile["ignoreMntFromSystemPathVariables"].get<bool>();
         systemPathVariableList = settingsFile["systemBinariesPath"].get<std::vector<std::string>>();
 
         databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
@@ -163,5 +168,16 @@ public:
     std::filesystem::path getDatabaseFilePath() { return databaseFilePath; }
     
     json getSettingsFile() { return settingsFile; }
-    std::vector<std::string> getSystemPathVariablePaths() { return systemPathVariableList; }
+
+    std::vector<std::string> getSystemPathVariablePaths() { 
+        if (ignoreMntFromSystemPathVariables) {
+            std::vector<std::string> filteredSystemPathVariableList;
+            for (const auto& entry : systemPathVariableList) {
+                if (entry.find("/mnt") != 0)
+                    filteredSystemPathVariableList.push_back(entry);
+            }
+            return filteredSystemPathVariableList;
+        } else
+            return systemPathVariableList; 
+    }
 };
