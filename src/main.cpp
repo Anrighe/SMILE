@@ -1,11 +1,15 @@
 #include <iostream>
+#include <map>
 #include "../include/Settings.hpp"
+#include "../include/WordDistanceHandler.hpp"
 
 #include <boost/program_options.hpp>
 
 namespace po = boost::program_options;
 
 int main(int argc, char* argv[]) {
+
+    std::string inputCommand;
 
     try {
         
@@ -25,7 +29,8 @@ int main(int argc, char* argv[]) {
         }
 
         if (vm.count("i")) {
-            spdlog::info("Specified input command: {}", vm["i"].as<std::string>());
+            inputCommand = vm["i"].as<std::string>();
+            spdlog::info("Specified input command: {}", inputCommand);
         } else {
             spdlog::error("Input command was not specified. Exiting...");
             exit(1);
@@ -52,10 +57,19 @@ int main(int argc, char* argv[]) {
     else
         spdlog::info("Initializer script successfully executed.");
 
+    spdlog::info("Printing content of system path vector");
+    CommonUtils::printVector(settings.getSystemPathVariablePaths());
 
+    // TODO: write a new program to update the database with each new binaries in the system each time a new bash shell is open
+    // to reduce calcultion time 
+
+    // TODO: use an heuristic to reduce calculation time further
+
+    std::vector<std::string> systemPathVariableList;
     for (const auto &entry : settings.getSystemPathVariablePaths()) {
         std::cout<<"entry: "<<entry<<"\n";
-        std::vector<std::string> systemPathVariableList = CommonUtils::getListOfFilesInPath(entry, false, true);
+        std::vector<std::string> toInsert = CommonUtils::getListOfFilesInPath(entry, false, true);
+        systemPathVariableList.insert(systemPathVariableList.end(), toInsert.begin(), toInsert.end());
         
         /*for (const auto &entry : systemPathVariableList) {
             std::cout<<entry<<"\n";
@@ -69,5 +83,18 @@ int main(int argc, char* argv[]) {
     }
     */
 
+    /*std::string word1 = "ciao";
+    std::string word2 = "ciTzo";
+    std::cout<<"Distance of "<<word1<<" and "<<word2<<": "<<WordDistanceHandler::calculateWordDistance(word1, word2)<<"\n";*/
+
+    //spdlog::info("Printing content of system path vector");
+    //CommonUtils::printVector(systemPathVariableList);
+
+    spdlog::info("Calculating distance Map");
+    std::map<std::string, int> distanceMap = WordDistanceHandler::calculateWordDistance(inputCommand, systemPathVariableList);
+
+    spdlog::info("Printing distance Map");
+    WordDistanceHandler::printDistanceMap(distanceMap);
+   
     return 0;
 }

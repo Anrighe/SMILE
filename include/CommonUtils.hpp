@@ -94,5 +94,17 @@ public:
         return fileList;
     }
 
-    
+    /**
+     * Prints the contents of a vector.
+     * This function works with vectors of any type that can be sent to the output stream.
+     * 
+     * @tparam T The type of the elements in the vector.
+     * @param vector A reference to the vector to be printed.
+     */
+    template <typename T>
+    static void printVector(const std::vector<T>& vector) {
+        for (const auto& element : vector)
+            std::cout<<element<<" ";
+        std::cout<<"\n";
+    }
 };
