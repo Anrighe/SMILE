@@ -1,5 +1,8 @@
 #include <iostream>
 #include <map>
+#include <set>
+#include <cmath>
+#include <unordered_set>
 #include "../include/Settings.hpp"
 #include "../include/WordDistanceHandler.hpp"
 
@@ -63,38 +66,88 @@ int main(int argc, char* argv[]) {
     // TODO: write a new program to update the database with each new binaries in the system each time a new bash shell is open
     // to reduce calcultion time 
 
-    // TODO: use an heuristic to reduce calculation time further
 
-    std::vector<std::string> systemPathVariableList;
+
+    std::set<std::string> systemPathVariableSet;
     for (const auto &entry : settings.getSystemPathVariablePaths()) {
-        std::cout<<"entry: "<<entry<<"\n";
-        std::vector<std::string> toInsert = CommonUtils::getListOfFilesInPath(entry, false, true);
-        systemPathVariableList.insert(systemPathVariableList.end(), toInsert.begin(), toInsert.end());
-        
-        /*for (const auto &entry : systemPathVariableList) {
-            std::cout<<entry<<"\n";
-        }*/
-    }
-    
-    // Testing
-    /*
-    for (const auto &entry : CommonUtils::getListOfFilesInPath(std::string("/usr/bin"))) {
-        std::cout<<entry<<"\n";
-    }
-    */
+        std::cout<<"Content of: "<<entry<<"\n";
 
-    /*std::string word1 = "ciao";
-    std::string word2 = "ciTzo";
-    std::cout<<"Distance of "<<word1<<" and "<<word2<<": "<<WordDistanceHandler::calculateWordDistance(word1, word2)<<"\n";*/
+        std::vector<std::string> filesInPath = CommonUtils::getListOfFilesInPath(entry, false, true);
 
-    //spdlog::info("Printing content of system path vector");
-    //CommonUtils::printVector(systemPathVariableList);
+        systemPathVariableSet.insert(filesInPath.begin(), filesInPath.end());
+    }
+
+    // TODO: use an heuristic to reduce calculation time further
+    spdlog::info("Printing content of system path set");
+    CommonUtils::printSet(systemPathVariableSet);
+
+    spdlog::info("Before filtering set size: {}", systemPathVariableSet.size());
+
+    std::set<std::string> systemPathVariableFilteredSet;
+
+
+    std::copy_if(
+        systemPathVariableSet.begin(), 
+        systemPathVariableSet.end(), 
+        std::inserter(systemPathVariableFilteredSet, systemPathVariableFilteredSet.end()), 
+        [inputCommand](const std::string& value){
+            
+            bool lengthCondition = std::abs(static_cast<int>(value.length()) - static_cast<int>(inputCommand.length())) <= 2;
+
+            if (!lengthCondition)
+                return lengthCondition;
+
+            std::unordered_set<char> inputCommandCharSet = CommonUtils::getSetOfUniqueCharFromString(inputCommand);
+            std::unordered_set<char> currentBinaryCharSet = CommonUtils::getSetOfUniqueCharFromString(value);
+            
+            std::unordered_set<char> intersectionSet;
+            for (char ch : inputCommandCharSet) {
+                if (currentBinaryCharSet.find(ch) != currentBinaryCharSet.end()) {
+                    intersectionSet.insert(ch);
+                }
+            }
+
+            
+            bool letterCondition = intersectionSet.size() >= (inputCommandCharSet.size() / 2);
+            if (letterCondition) {
+                spdlog::info("{} is greater or equal to {}", intersectionSet.size(), inputCommandCharSet.size() / 2);
+            }
+
+            return letterCondition;
+        }
+    );
+
+    spdlog::info("After filtering set size: {}", systemPathVariableFilteredSet.size());
+
+    spdlog::info("Printing content of system path set after filtering");
+    CommonUtils::printSet(systemPathVariableFilteredSet);
 
     spdlog::info("Calculating distance Map");
-    std::map<std::string, int> distanceMap = WordDistanceHandler::calculateWordDistance(inputCommand, systemPathVariableList);
+    std::map<std::string, int> distanceMap = WordDistanceHandler::calculateWordDistance(inputCommand, systemPathVariableFilteredSet);
 
-    spdlog::info("Printing distance Map");
-    WordDistanceHandler::printDistanceMap(distanceMap);
+    int minValueInMap = INT_MAX;
+    for (auto const &entry : distanceMap) {
+        if (entry.second < minValueInMap)
+            minValueInMap = entry.second;
+    }
+
+    std::vector<std::string> similarCommands;
+    for (auto const &entry : distanceMap) {
+        if (entry.second == minValueInMap) {
+            similarCommands.push_back(entry.first);
+        }
+    }
+
+    std::cout<<"Could not find command " + inputCommand + ". Were you looking for";
+    for (auto const &entry : similarCommands) {
+        std::cout<<" \""<<entry<<"\"";
+    }
+    std::cout<<"?\n";
+
+
+
+    //spdlog::info("Printing distance Map");
+    //WordDistanceHandler::printDistanceMap(distanceMap);
    
     return 0;
 }

@@ -13,7 +13,8 @@ src/main.o: src/main.cpp
 	$(CXX) $(CXXFLAGS) -c src/main.cpp -o src/main.o
 
 clean:
-	rm -f smile $(OBJS) && rm -rf ~/.smile
+	rm -f smile $(OBJS)
+#	rm -f smile $(OBJS) && rm -rf ~/.smile
 
 run: smile
 		./smile

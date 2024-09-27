@@ -81,6 +81,14 @@ public:
         return distanceMap;
     }
 
+    static std::map<std::string, int> calculateWordDistance(std::string word1, std::set<std::string> wordSet) {
+        std::map<std::string, int> distanceMap;
+        for(std::string entry : wordSet)
+            distanceMap.insert(std::make_pair(entry, calculateWordDistance(word1, entry)));
+
+        return distanceMap;
+    }    
+
     /**
      * Prints a map of words and their distances.
      * 

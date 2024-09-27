@@ -107,4 +107,26 @@ public:
             std::cout<<element<<" ";
         std::cout<<"\n";
     }
+
+    /**
+     * Prints the contents of a set.
+     * This function works with sets of any type that can be sent to the output stream.
+     * 
+     * @tparam T The type of the elements in the set.
+     * @param set A reference to the set to be printed.
+     */
+    template <typename SetType>
+    static void printSet(const SetType& set) {
+        for (const auto& element : set)
+            std::cout<<element<<" ";
+        std::cout<<"\n";
+    }
+
+    static std::unordered_set<char> getSetOfUniqueCharFromString(std::string string) {
+        std::unordered_set<char> charSet;
+        for(std::size_t i = 0; i < string.size(); ++i)
+            charSet.insert(string[i]);
+
+        return charSet;
+    }
 };
