@@ -24,7 +24,7 @@
 ---
 
 ### Steps of the algorithm:
-1) An incorrect command (do I also want to consider built-ins? Still need to decide) is executed on the shell.
+1) An incorrect command is executed on the shell.
 2) The binary couldn't be found in the ***$PATH*** variable, consequently the ***command_not_found_handle()*** function is executed.
 3) A new version of this function runs the *SMILE* program.
 4) *SMILE* searches which binaries is currently installed in the system.
