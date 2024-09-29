@@ -19,25 +19,32 @@ int main(int argc, char* argv[]) {
         // Handling program parameters
         po::options_description desc("Allowed options");
         desc.add_options()
-            ("help", "Produce a help message")
-            ("i", po::value<std::string>(), "The input command");
+            ("i", po::value<std::string>(), "The input command")
+            ("e", "Edit the configuration file")
+            ("help", "Produce a help message");
 
         po::variables_map vm;        
         po::store(po::parse_command_line(argc, argv, desc), vm);
         po::notify(vm);    
 
+        
+
+        if (vm.count("i")) {
+            inputCommand = vm["i"].as<std::string>();
+            spdlog::info("Specified input command: {}", inputCommand);
+        }
+
+        if (vm.count("e")) {
+            system("editor ~/.smile/settings.json");
+            return 0;
+        }
+        
         if (vm.count("help")) {
             std::cout<<desc<<"\n";
             return 0;
         }
 
-        if (vm.count("i")) {
-            inputCommand = vm["i"].as<std::string>();
-            spdlog::info("Specified input command: {}", inputCommand);
-        } else {
-            spdlog::error("Input command was not specified. Exiting...");
-            exit(1);
-        }
+
 
     }
     catch(std::exception& e) {
@@ -106,12 +113,8 @@ int main(int argc, char* argv[]) {
                     intersectionSet.insert(ch);
                 }
             }
-
             
             bool letterCondition = intersectionSet.size() >= (inputCommandCharSet.size() / 2);
-            if (letterCondition) {
-                spdlog::info("{} is greater or equal to {}", intersectionSet.size(), inputCommandCharSet.size() / 2);
-            }
 
             return letterCondition;
         }
