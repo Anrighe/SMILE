@@ -190,6 +190,10 @@ int main(int argc, char* argv[]) {
 
     ensureCommandNotFoundHandler();
 
+    //TODO: enable database insertion for history if enabled
+
+    //TODO: order results by most similar characters from the start to give more appropriate results?
+
     suggestCommands(vm, inputCommand, settings);
 
     return 0;
