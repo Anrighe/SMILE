@@ -26,5 +26,8 @@ dist: smile
 	@cp ./smile $(TARGET)
 
 install: all
+	sudo chmod 755 initializer/initializer.sh
+	bash initializer/initializer.sh
+	@sudo test -d /usr/bin/smile && sudo rm -rf /usr/bin/smile
 	@sudo mv $(TARGET) /usr/bin/smile
 	@echo "Installation complete. Smile is available in /usr/bin"

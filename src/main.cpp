@@ -121,23 +121,6 @@ bool suggestCommands(const po::variables_map vm, std::string inputCommand, Setti
     return true;
 }
 
-/**
- * Ensures that the `command_not_found_handle` function is present in the `.bashrc` file by running the initializer script.
- * 
- * @return int Returns 0 if the script executes successfully, otherwise returns a non-zero value on failure.
- */
-int ensureCommandNotFoundHandler() {
-    int result = system("bash initializer/initialzer.sh");
-    
-    if (result == 0)
-        spdlog::info("Initializer script successfully executed.");
-    else
-        spdlog::error("Error executing the initializer script. Return code: {}", result);
-    
-    return result;
-}
-
-
 int main(int argc, char* argv[]) {
 
     std::string inputCommand;
@@ -187,8 +170,6 @@ int main(int argc, char* argv[]) {
     }
 
     Settings settings;
-
-    ensureCommandNotFoundHandler();
 
     //TODO: enable database insertion for history if enabled
 
