@@ -18,6 +18,8 @@ using json = nlohmann::json;
 #define DATABASE_FILENAME "historyStorage.db"
 #define DEFAULT_DATABASE_HISTORY_STORAGE true
 #define DEFAULT_IGNORE_MNT_FROM_SYSTEM_PATH_VARIABLES true
+#define DEFAULT_LENGTH_CONDITION_ENABLED true
+#define DEFAULT_LENGTH_CONDITION_HEURISTIC 2
 
 #define DEBUG false
 
@@ -40,6 +42,8 @@ private:
 
     bool databaseHistoryStorageEnabled;
     bool ignoreMntFromSystemPathVariables;
+    bool lengthConditionHeuristicEnabled;
+    int lengthConditionHeuristic;
     std::vector<std::string> systemPathVariableList;
     SQLite::Database * db;
 
@@ -79,6 +83,9 @@ private:
         
         settingsFile["ignoreMntFromSystemPathVariables"] = DEFAULT_IGNORE_MNT_FROM_SYSTEM_PATH_VARIABLES;
 
+        settingsFile["lengthConditionHeuristicEnabled"] = DEFAULT_LENGTH_CONDITION_ENABLED;
+        settingsFile["lengthConditionHeuristic"] = DEFAULT_LENGTH_CONDITION_HEURISTIC;
+
         std::ofstream file(settingsFilePath);
         file<<settingsFile;
         file.close();
@@ -91,24 +98,30 @@ private:
     }
 
     void loadSettingsFile() {
-        spdlog::info("Loding settings file configuration...");
+        try {
+            spdlog::info("Loding settings file configuration...");
 
-        std::ifstream file(settingsFilePath);
-        if (!file.is_open()) {
-            spdlog::error("Error while opening settings file: " +  settingsDirectoryPath.string() + "/" + settingsFileName);
-            exit(1);
+            std::ifstream file(settingsFilePath);
+            if (!file.is_open()) {
+                spdlog::error("Error while opening settings file: " +  settingsDirectoryPath.string() + "/" + settingsFileName);
+                exit(1);
+            }
+
+            file>>settingsFile;
+            file.close();
+
+            ignoreMntFromSystemPathVariables = settingsFile["ignoreMntFromSystemPathVariables"].get<bool>();
+            systemPathVariableList = settingsFile["systemBinariesPath"].get<std::vector<std::string>>();
+            lengthConditionHeuristicEnabled = settingsFile["lengthConditionHeuristicEnabled"].get<bool>();
+            lengthConditionHeuristic = settingsFile["lengthConditionHeuristic"].get<int>();
+
+            databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
+            generateDatabaseIfNotExists(databaseHistoryStorageEnabled);
+            
+            spdlog::info("Settings file successfully loaded");
+        } catch (const std::exception &e) {
+            spdlog::error("Error while loading the settings file: {}", e.what());
         }
-
-        file>>settingsFile;
-        file.close();
-
-        ignoreMntFromSystemPathVariables = settingsFile["ignoreMntFromSystemPathVariables"].get<bool>();
-        systemPathVariableList = settingsFile["systemBinariesPath"].get<std::vector<std::string>>();
-
-        databaseHistoryStorageEnabled = settingsFile["databaseHistoryStorageEnabled"].get<bool>();
-        generateDatabaseIfNotExists(databaseHistoryStorageEnabled);
-        
-        spdlog::info("Settings file successfully loaded");
     }
 
     void generateDatabaseIfNotExists(bool databaseHistoryStorageEnabled) {
@@ -180,4 +193,8 @@ public:
         } else
             return systemPathVariableList; 
     }
+
+    // By adding const to these member functions, it promises that calling them will not change the state of the Settings object
+    bool getLengthConditionHeuristicEnabled() const { return lengthConditionHeuristicEnabled; }
+    int getLengthConditionHeuristic() const { return lengthConditionHeuristic; }
 };

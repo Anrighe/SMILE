@@ -10,24 +10,156 @@
 
 namespace po = boost::program_options;
 
+/**
+ * Compares the given input command against binaries found in the system path, applying, if enabled a heuristic 
+ * based on the difference in length and character similarities between the input command and system binaries, 
+ * which filters those whose difference with the input command exceeds a threshold.
+ * Calculates the word distances with the Damerau-Leveshtein algorithm and suggests the closest matches. 
+ * 
+ * @param vm Boost program options variables map that holds command line options.
+ * @param inputCommand The command entered by the user, which needs to be matched or corrected.
+ * @param settings The settings object containing configuration such as system path variables and heuristics for matching.
+ * @return true if similar commands are found, otherwise false if no suggestions can be made.
+ */
+bool suggestCommands(const po::variables_map vm, std::string inputCommand, Settings settings) {
+    spdlog::info("Printing content of system path vector");
+
+    // If verbose mode enabled print the content of the system path vector
+    if (vm.count("v"))
+        CommonUtils::printVector(settings.getSystemPathVariablePaths());
+
+    // Moving system path to a new data structure
+    std::set<std::string> systemPathVariableSet;
+    for (const auto &entry : settings.getSystemPathVariablePaths()) {
+        std::vector<std::string> filesInPath = CommonUtils::getListOfFilesInPath(entry, false, true);
+        systemPathVariableSet.insert(filesInPath.begin(), filesInPath.end());
+    }
+
+    spdlog::info("Printing content of system path set");
+
+    // If verbose mode enabled print the set
+    if (vm.count("v"))
+        CommonUtils::printSet(systemPathVariableSet);
+
+    spdlog::info("Before filtering set size: {}", systemPathVariableSet.size());
+
+    std::set<std::string> systemPathVariableFilteredSet;
+
+    spdlog::info("Applying length distance heuristic based on a maximum difference in length of {}", settings.getLengthConditionHeuristic());
+    if (settings.getLengthConditionHeuristicEnabled()) {
+
+        std::copy_if(
+            systemPathVariableSet.begin(), 
+            systemPathVariableSet.end(), 
+            std::inserter(systemPathVariableFilteredSet, systemPathVariableFilteredSet.end()), 
+            [inputCommand, settings](const std::string& value){
+                
+                int absoluteLengthLetterDifference = std::abs(static_cast<int>(value.length()) - static_cast<int>(inputCommand.length()));    
+
+                // This heuristic is used to improve runtimes by reducing the numbers of binaries to check based on the total amount of
+                // length differencies between the two words. By default, if their length is different by two or more letters, their
+                // distance do not get calculated
+                bool lengthCondition = absoluteLengthLetterDifference <= settings.getLengthConditionHeuristic();
+
+                if (!lengthCondition)
+                    return lengthCondition;
+
+                std::unordered_set<char> inputCommandCharSet = CommonUtils::getSetOfUniqueCharFromString(inputCommand);
+                std::unordered_set<char> currentBinaryCharSet = CommonUtils::getSetOfUniqueCharFromString(value);
+                
+                std::unordered_set<char> intersectionSet;
+                for (char ch : inputCommandCharSet) {
+                    if (currentBinaryCharSet.find(ch) != currentBinaryCharSet.end())
+                        intersectionSet.insert(ch);
+                }
+                
+                bool letterCondition = intersectionSet.size() >= (inputCommandCharSet.size() / 2);
+
+                return letterCondition;
+            }
+        );
+    } else
+        systemPathVariableFilteredSet = systemPathVariableSet;
+
+    if (settings.getLengthConditionHeuristicEnabled()) {
+        spdlog::info("After filtering set size: {}", systemPathVariableFilteredSet.size());
+
+        spdlog::info("Printing content of system path set after filtering");
+        // If verbose mode enabled print the newly filtered set
+        if (vm.count("v"))
+            CommonUtils::printSet(systemPathVariableFilteredSet);
+    }
+
+    spdlog::info("Calculating distance Map");
+    std::map<std::string, int> distanceMap = WordDistanceHandler::calculateWordDistance(inputCommand, systemPathVariableFilteredSet);
+
+    if (distanceMap.size() == 0) {
+        std::cout<<"Could not find any similar commands to \""<<inputCommand<<"\"\n";
+        return false;
+    } 
+
+    int minValueInMap = INT_MAX;
+    for (auto const &entry : distanceMap) {
+        if (entry.second < minValueInMap)
+            minValueInMap = entry.second;
+    }
+
+    std::vector<std::string> similarCommands;
+    for (auto const &entry : distanceMap) {
+        if (entry.second == minValueInMap) {
+            similarCommands.push_back(entry.first);
+        }
+    }
+
+    if (similarCommands.size() > 1) {
+        std::cout<<"Could not find command " + inputCommand + ". Were you looking for these?\n";
+        for (auto const &entry : similarCommands)
+            std::cout<<"- "<<entry<<"\n";
+    } else 
+        std::cout<<"Could not find command " + inputCommand + ". Were you looking for \"" + similarCommands[0]<<"\"?\n";
+
+    return true;
+}
+
+/**
+ * Ensures that the `command_not_found_handle` function is present in the `.bashrc` file by running the initializer script.
+ * 
+ * @return int Returns 0 if the script executes successfully, otherwise returns a non-zero value on failure.
+ */
+int ensureCommandNotFoundHandler() {
+    int result = system("bash initializer/initialzer.sh");
+    
+    if (result == 0)
+        spdlog::info("Initializer script successfully executed.");
+    else
+        spdlog::error("Error executing the initializer script. Return code: {}", result);
+    
+    return result;
+}
+
+
 int main(int argc, char* argv[]) {
 
     std::string inputCommand;
+    
+    po::variables_map vm;        
+    po::options_description desc("Allowed options");
 
     try {
-        
         // Handling program parameters
-        po::options_description desc("Allowed options");
         desc.add_options()
             ("i", po::value<std::string>(), "The input command")
             ("e", "Edit the configuration file")
+            ("v", "Verbose mode")
             ("help", "Produce a help message");
 
-        po::variables_map vm;        
         po::store(po::parse_command_line(argc, argv, desc), vm);
         po::notify(vm);    
 
         
+        if (!vm.count("v")) {
+            spdlog::set_level(spdlog::level::off);
+        }
 
         if (vm.count("i")) {
             inputCommand = vm["i"].as<std::string>();
@@ -44,8 +176,6 @@ int main(int argc, char* argv[]) {
             return 0;
         }
 
-
-
     }
     catch(std::exception& e) {
         std::cerr<<"error: "<<e.what()<<"\n";
@@ -57,100 +187,10 @@ int main(int argc, char* argv[]) {
     }
 
     Settings settings;
-    spdlog::info("Settings successufully loaded.");
 
+    ensureCommandNotFoundHandler();
 
-    // Writing command_not_found_handle funtion in .bashrc file if not present
-    int result = system("bash initializer/initialzer.sh");
-    if (result != 0)
-        spdlog::error("Error executing the initializer script. Return code: {}", result);
-    else
-        spdlog::info("Initializer script successfully executed.");
+    suggestCommands(vm, inputCommand, settings);
 
-    spdlog::info("Printing content of system path vector");
-    CommonUtils::printVector(settings.getSystemPathVariablePaths());
-
-    // TODO: write a new program to update the database with each new binaries in the system each time a new bash shell is open
-    // to reduce calcultion time 
-
-
-
-    std::set<std::string> systemPathVariableSet;
-    for (const auto &entry : settings.getSystemPathVariablePaths()) {
-        std::cout<<"Content of: "<<entry<<"\n";
-
-        std::vector<std::string> filesInPath = CommonUtils::getListOfFilesInPath(entry, false, true);
-
-        systemPathVariableSet.insert(filesInPath.begin(), filesInPath.end());
-    }
-
-    // TODO: use an heuristic to reduce calculation time further
-    spdlog::info("Printing content of system path set");
-    CommonUtils::printSet(systemPathVariableSet);
-
-    spdlog::info("Before filtering set size: {}", systemPathVariableSet.size());
-
-    std::set<std::string> systemPathVariableFilteredSet;
-
-
-    std::copy_if(
-        systemPathVariableSet.begin(), 
-        systemPathVariableSet.end(), 
-        std::inserter(systemPathVariableFilteredSet, systemPathVariableFilteredSet.end()), 
-        [inputCommand](const std::string& value){
-            
-            bool lengthCondition = std::abs(static_cast<int>(value.length()) - static_cast<int>(inputCommand.length())) <= 2;
-
-            if (!lengthCondition)
-                return lengthCondition;
-
-            std::unordered_set<char> inputCommandCharSet = CommonUtils::getSetOfUniqueCharFromString(inputCommand);
-            std::unordered_set<char> currentBinaryCharSet = CommonUtils::getSetOfUniqueCharFromString(value);
-            
-            std::unordered_set<char> intersectionSet;
-            for (char ch : inputCommandCharSet) {
-                if (currentBinaryCharSet.find(ch) != currentBinaryCharSet.end()) {
-                    intersectionSet.insert(ch);
-                }
-            }
-            
-            bool letterCondition = intersectionSet.size() >= (inputCommandCharSet.size() / 2);
-
-            return letterCondition;
-        }
-    );
-
-    spdlog::info("After filtering set size: {}", systemPathVariableFilteredSet.size());
-
-    spdlog::info("Printing content of system path set after filtering");
-    CommonUtils::printSet(systemPathVariableFilteredSet);
-
-    spdlog::info("Calculating distance Map");
-    std::map<std::string, int> distanceMap = WordDistanceHandler::calculateWordDistance(inputCommand, systemPathVariableFilteredSet);
-
-    int minValueInMap = INT_MAX;
-    for (auto const &entry : distanceMap) {
-        if (entry.second < minValueInMap)
-            minValueInMap = entry.second;
-    }
-
-    std::vector<std::string> similarCommands;
-    for (auto const &entry : distanceMap) {
-        if (entry.second == minValueInMap) {
-            similarCommands.push_back(entry.first);
-        }
-    }
-
-    std::cout<<"Could not find command " + inputCommand + ". Were you looking for";
-    for (auto const &entry : similarCommands) {
-        std::cout<<" \""<<entry<<"\"";
-    }
-    std::cout<<"?\n";
-
-
-
-    //spdlog::info("Printing distance Map");
-    //WordDistanceHandler::printDistanceMap(distanceMap);
-   
     return 0;
 }
