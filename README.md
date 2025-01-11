@@ -21,13 +21,35 @@
    sudo apt-get install nlohmann-json3-dev libspdlog-dev libboost-all-dev libsqlitecpp-dev
    ```
 
----
-
 ### Steps of the algorithm:
 1) An incorrect command is executed on the shell.
-2) The binary couldn't be found in the ***$PATH*** variable, consequently the ***command_not_found_handle()*** function is executed.
-3) A new version of this function runs the *SMILE* program.
-4) *SMILE* searches which binaries is currently installed in the system.
-5) For each binary in the system, the [Jaccard similarity coefficient](https://en.wikipedia.org/wiki/Jaccard_index).
-6) For all results of the Jaccard similarity coefficient computation, if they are greater than a specific threshold, the [Damerau–Levenshtein](https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance) distance will be calculated between the user inserted command and the current binary.
-7) For all results of the Damerau–Levenshtein computation, if the edit distance is less than a specific threshold, they will be suggested to the user.
+2) The system cannot find the binary in the directories listed in the ***$PATH*** and triggers the ***command_not_found_handle()*** function.
+3) The *SMILE* program is executed, passing the not-found command as an argument.
+4) *SMILE* scans the system for installed binaries by examining directories specified in its configuration file
+5) If enabled on the settings file, the program uses an heuristic approach to filter those binaries of which length and individual characters mismatches exceed a specified threshold.
+6) For each resulting found binary, *SMILE* calculates the [Damerau-Leveshtein distance](https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance).
+7) Binaries with a Damerau-Levenshtein distance within the defined threshold are suggested to the user as potential corrections.
+
+---
+
+### Configuration
+*SMILE* uses a `settings.json` file to define its behavior. Below is an example configuration:
+
+```JSON
+{
+  "databaseHistoryStorageEnabled": false,   // WIP
+  "ignoreMntFromSystemPathVariables": true, // Ignores paths that starts with /mnt/ from the lookup of binaries
+  "lengthConditionHeuristic": 2,            // Heuristic length condition to apply prior to the Damerau-Leveshtein distance calculation
+  "lengthConditionHeuristicEnabled": true,
+  "systemBinariesPath": [                   // List of path for the binaries lookup
+    "/usr/local/sbin",
+    "/usr/local/bin",
+    "/usr/sbin",
+    "/usr/bin",
+    "/sbin",
+    "/bin",
+    "/usr/games",
+    "/usr/local/games"
+  ]
+}
+```
